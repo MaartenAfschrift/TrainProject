@@ -2,7 +2,7 @@
 
 % load a specific train
 Set.DatFolder = 'C:\Users\mat950\Documents\Data\TrainProject\Train_20220507';
-Set.Filter.Cutoff = 4;
+Set.Filter.Cutoff = 6;
 Set.Filter.Order = 4;
 
 %% Figure 1
@@ -20,7 +20,6 @@ for iTrain = 1:22
     [a,b] = butter(Set.Filter.Order,Set.Filter.Cutoff/(2000*0.5),'low');
     F = filtfilt(a,b,FP.F);
     M = filtfilt(a,b,FP.M);
-
 
     % compute COP position
     t = FP.t-FP.t(1);
@@ -40,13 +39,13 @@ end
 
 subplot(1,2,1)
 set(gca,'XLim',[25 25+20]);
-set(gca,'YLim',[-100 100]);
+set(gca,'YLim',[-200 200]);
 xlabel('Time [s]')
 ylabel('Force [N]')
 
 subplot(1,2,2)
 set(gca,'XLim',[25 25+20]);
-set(gca,'YLim',[-100 100]);
+set(gca,'YLim',[-200 200]);
 xlabel('Time [s]')
 ylabel('Moment [Nm]')
 
@@ -75,12 +74,19 @@ for iTrain = 1:22
     COPx= (M(:,2)+COPz.*F(:,1))./F(:,3);
 
     % plot the force and moment
-    subplot(5,5,iTrain)
+    subplot(3,8,iTrain)
     plot(t,F(:,2),'LineWidth',lw,'Color',Cs); hold on;
     set(gca,'XLim',[20 25+30]);
-    set(gca,'YLim',[-100 100]);
-    set(gca,'Box','off')
-    title(datestr(FP.dateTrain))
+    set(gca,'YLim',[-200 200]);
+    set(gca,'Box','off');
+
+    % get the title for this train
+    if isfield(FP,'Info');
+        titleSel = [FP.Info.type '; ' num2str(FP.Info.snelheid) 'km/h' ];
+    else
+        titleSel = 'TrainUnknown';
+    end
+    title(titleSel);
 end
 
 %% Figure 2
@@ -107,17 +113,87 @@ for iTrain = 1:22
     COPx= (M(:,2)+COPz.*F(:,1))./F(:,3);
 
     % plot the force and moment
-    subplot(5,5,iTrain)
+    subplot(3,8,iTrain)
     plot(t,F(:,2),'LineWidth',lw,'Color',Cs); hold on;
     set(gca,'XLim',[20 25+30]);
-    set(gca,'YLim',[-100 100]);
+    set(gca,'YLim',[-200 200]);
     set(gca,'Box','off')
-    title(datestr(FP.dateTrain))
+
+    % get the title for this train
+    if isfield(FP,'Info');
+        titleSel = [FP.Info.type '; ' num2str(FP.Info.snelheid) 'km/h' ];
+    else
+        titleSel = 'TrainUnknown';
+    end
+    title(titleSel);
 end
 % subplot(1,2,1)
 % set(gca,'XLim',[25 25+20]);
 % set(gca,'YLim',[-100 100]);
 % % xlabel('Time [s]')
 % % ylabel('Force [N]')
+
+%% plot overview figure for each train
+
+CSlow = [0 0 1];
+CFast = [1 0 0];
+
+TrainType = {'ICD','ICNG','Other'};
+figure('Name','Force Type');
+ImpulsV = 
+
+for iTrain = 1:22
+
+    % load the datafile
+    dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
+    FP = load(fullfile(Set.DatFolder,'StructuredFiles',dfile));
+
+    % filter train data
+    [a,b] = butter(Set.Filter.Order,Set.Filter.Cutoff/(2000*0.5),'low');
+    F = filtfilt(a,b,FP.F);
+    M = filtfilt(a,b,FP.M);
+    t = FP.t-FP.t(1);
+
+
+    if isfield(FP,'Info')
+        if strcmp(FP.Info.type,TrainType{1});
+            iPlot = 1;
+            titsel = TrainType{1};
+        elseif strcmp(FP.Info.type,TrainType{2});
+            iPlot = 2;
+            titsel = TrainType{2};
+        else
+            iPlot = 3;
+            titsel = 'uknown';
+        end
+        if FP.Info.snelheid<150
+            Cs = CSlow;
+        else
+            Cs = CFast;
+        end
+        subplot(3,3,iPlot)
+        plot(t,F(:,1),'LineWidth',lw,'Color',Cs); hold on;
+        title(titsel);
+        subplot(3,3,iPlot+3)
+        plot(t,F(:,2),'LineWidth',lw,'Color',Cs); hold on;
+        subplot(3,3,iPlot+6)
+        plot(t,F(:,3),'LineWidth',lw,'Color',Cs); hold on;
+    end
+end
+
+for i=1:9
+    subplot(3,3,i)
+    set(gca,'XLim',[20 25+30]);
+    set(gca,'YLim',[-200 250]);
+    set(gca,'Box','off');
+    if i<4
+        ylabel('Force X [N]');
+    elseif i<7
+        ylabel('Force Y [N]');
+    else
+        ylabel('Force Z [N]');
+    end
+    xlabel('Time [s]');
+end
 
 
