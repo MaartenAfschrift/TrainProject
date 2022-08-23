@@ -89,7 +89,7 @@ for iTrain = 1:22
     title(titleSel);
 end
 
-%% Figure 2
+%% Figure 2 - moment
 lw = 1;
 Cs = [0.2 0.2 1];
 
@@ -112,11 +112,13 @@ for iTrain = 1:22
     COPz = (COPy.*F(:,3)-M(:,1))./F(:,2);
     COPx= (M(:,2)+COPz.*F(:,1))./F(:,3);
 
+    COPz(abs(F(:,2))<30) = NaN;
+
     % plot the force and moment
     subplot(3,8,iTrain)
-    plot(t,F(:,2),'LineWidth',lw,'Color',Cs); hold on;
+    plot(t,COPz,'LineWidth',lw,'Color',Cs); hold on;
     set(gca,'XLim',[20 25+30]);
-    set(gca,'YLim',[-200 200]);
+%     
     set(gca,'Box','off')
 
     % get the title for this train
@@ -140,7 +142,6 @@ CFast = [1 0 0];
 
 TrainType = {'ICD','ICNG','Other'};
 figure('Name','Force Type');
-ImpulsV = 
 
 for iTrain = 1:22
 
@@ -195,5 +196,71 @@ for i=1:9
     end
     xlabel('Time [s]');
 end
+
+%% Detailed figure for presentation
+
+
+lw = 1.7;
+CSlow = [0 0 1];
+CFast = [1 0 0];
+
+TrainType = {'ICD','ICNG','Other'};
+figure('Name','Force Type');
+
+for iTrain = 1:22
+
+    % load the datafile
+    dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
+    FP = load(fullfile(Set.DatFolder,'StructuredFiles',dfile));
+
+    % filter train data
+    [a,b] = butter(Set.Filter.Order,Set.Filter.Cutoff/(2000*0.5),'low');
+    F = filtfilt(a,b,FP.F);
+    M = filtfilt(a,b,FP.M);
+    t = FP.t-FP.t(1);
+
+
+    if isfield(FP,'Info')
+        if strcmp(FP.Info.type,TrainType{1});
+            iPlot = 1;
+            titsel = TrainType{1};
+        elseif strcmp(FP.Info.type,TrainType{2});
+            iPlot = 2;
+            titsel = TrainType{2};
+        else
+            iPlot = 3;
+            titsel = 'uknown';
+        end
+        if FP.Info.snelheid<150
+            Cs = CSlow;
+        else
+            Cs = CFast;
+        end
+        if iPlot<3
+            subplot(1,2,iPlot)
+            l = plot(t,F(:,2),'LineWidth',lw,'Color',Cs); hold on;
+            if FP.Info.snelheid<150 && iPlot == 1
+                il(1) = l;
+            elseif FP.Info.snelheid>150 && iPlot == 1
+                il(2) = l;
+            end
+        end
+    end
+end
+
+for i=1:2
+    subplot(1,2,i)
+    set(gca,'XLim',[25 25+20]);
+    set(gca,'YLim',[-200 250]);
+    set(gca,'Box','off');
+    ylabel('Force - y [N]');
+    xlabel('Time [s]');
+    set(gca,'FontSize',10);
+    set(gca,'LineWidth',1.3);
+end
+legend(il,{'140km/h', '160 km/h'});
+
+%% aangrijpingspunt kracht
+
 
 
