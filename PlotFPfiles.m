@@ -66,6 +66,12 @@ for iTrain = 1:22
     F = filtfilt(a,b,FP.F);
     M = filtfilt(a,b,FP.M);
 
+    M0 = nanmean(M(1:10000,:));
+    F0 = nanmean(F(1:10000,:));
+
+    M = M-M0;
+    F = F-F0;
+
 
     % compute COP position
     t = FP.t-FP.t(1);
@@ -105,20 +111,30 @@ for iTrain = 1:22
     F = filtfilt(a,b,FP.F);
     M = filtfilt(a,b,FP.M);
 
+    M0 = nanmean(M(1:10000,:));
+    F0 = nanmean(F(1:10000,:));
+
+    M = M-M0;
+    F = F-F0;
 
     % compute COP position
-    t = FP.t-FP.t(1);
-    COPy = 0;
-    COPz = (COPy.*F(:,3)-M(:,1))./F(:,2);
-    COPx= (M(:,2)+COPz.*F(:,1))./F(:,3);
+    iSel = abs(F(:,2))>50;
+    Fs = F(iSel,:);
+    Ms = M(iSel,:);
 
-    COPz(abs(F(:,2))<30) = NaN;
+    t = FP.t-FP.t(1);
+    COPy = zeros(size(t));
+    COPz = (COPy.*F(:,3)-M(:,1))./F(:,2);
+    COPx= (-M(:,2)+COPz.*F(:,1))./F(:,3);
+    COP = [COPx COPy COPz];
+    COPs = COP(iSel,:);
+    COPz(abs(F(:,2))<10) = NaN;
 
     % plot the force and moment
     subplot(3,8,iTrain)
     plot(t,COPz,'LineWidth',lw,'Color',Cs); hold on;
     set(gca,'XLim',[20 25+30]);
-%     
+    %
     set(gca,'Box','off')
 
     % get the title for this train
@@ -129,12 +145,6 @@ for iTrain = 1:22
     end
     title(titleSel);
 end
-% subplot(1,2,1)
-% set(gca,'XLim',[25 25+20]);
-% set(gca,'YLim',[-100 100]);
-% % xlabel('Time [s]')
-% % ylabel('Force [N]')
-
 %% plot overview figure for each train
 
 CSlow = [0 0 1];
@@ -155,6 +165,11 @@ for iTrain = 1:22
     M = filtfilt(a,b,FP.M);
     t = FP.t-FP.t(1);
 
+    M0 = nanmean(M(1:10000,:));
+    F0 = nanmean(F(1:10000,:));
+
+    M = M-M0;
+    F = F-F0;
 
     if isfield(FP,'Info')
         if strcmp(FP.Info.type,TrainType{1});
@@ -219,6 +234,17 @@ for iTrain = 1:22
     M = filtfilt(a,b,FP.M);
     t = FP.t-FP.t(1);
 
+    % subtract offset (drift during the night)
+    M0 = nanmean(M(1:10000,:));
+    F0 = nanmean(F(1:10000,:));
+    M = M-M0;
+    F = F-F0;
+
+    % compute COPz position
+    t = FP.t-FP.t(1);
+    COPy = zeros(size(t)); % wooden plate is mounted at COPy = 0
+    COPz = (COPy.*F(:,3)-M(:,1))./F(:,2);
+    COPz(abs(F(:,2))<20) = NaN; %  only compute COP when horizonal forces exceeds treshold
 
     if isfield(FP,'Info')
         if strcmp(FP.Info.type,TrainType{1});
@@ -237,23 +263,32 @@ for iTrain = 1:22
             Cs = CFast;
         end
         if iPlot<3
-            subplot(1,2,iPlot)
+            subplot(2,2,iPlot)
             l = plot(t,F(:,2),'LineWidth',lw,'Color',Cs); hold on;
             if FP.Info.snelheid<150 && iPlot == 1
                 il(1) = l;
             elseif FP.Info.snelheid>150 && iPlot == 1
                 il(2) = l;
             end
+            subplot(2,2,iPlot+2)
+            l = plot(t,-COPz,'LineWidth',lw,'Color',Cs); hold on;
+            COPz_Mean = nanmean(-COPz);
+            line([25 25+20],[COPz_Mean COPz_Mean],'LineWidth',lw/3,'Color',Cs);            
         end
     end
 end
 
-for i=1:2
-    subplot(1,2,i)
+for i=1:4
+    subplot(2,2,i)
     set(gca,'XLim',[25 25+20]);
-    set(gca,'YLim',[-200 250]);
-    set(gca,'Box','off');
-    ylabel('Force - y [N]');
+    if i<3
+        set(gca,'YLim',[-200 250]);
+        ylabel('Force-y [N]');
+    else
+        set(gca,'YLim',[0 1.3]);
+        ylabel('COPz [m]');
+    end
+    set(gca,'Box','off');    
     xlabel('Time [s]');
     set(gca,'FontSize',10);
     set(gca,'LineWidth',1.3);
