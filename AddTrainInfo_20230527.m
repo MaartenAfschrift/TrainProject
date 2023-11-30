@@ -66,6 +66,11 @@ for i=1:nTrains
         Info.richting = TrainInfo.richting{i};
         Info.snelheid = TrainInfo.snelheid(i);
         % Info.afstandPP = TrainInfo.afstand(i);
+        if t>0.11 && t<0.4
+            Info.Dummy = 2; % kleine dummy
+        else
+            Info.Dummy = 1; % grote dummy
+        end
 
         % get the FP file
         F = FP{iMin}.F;
@@ -73,6 +78,21 @@ for i=1:nTrains
         dateTrain = FP{iMin}.dateTrain;
         t = FP{iMin}.t;
         filename =  FP{iMin}.filename;
+
+        % remove initial offset
+        F0 = nanmean(F(1:10000,:));
+        M0 = nanmean(M(1:10000,:));
+        F = F-F0;
+        M = M-M0;
+
+        % The FP tilts sometimes when the train passes by. The only thing we
+        % can do is assume that the first gust of wind changed the orientation
+        % of the platform. so we zero level using the final values.
+        i0 = find(t-t(1)==30);
+        F_end = nanmean(F(end-4000:end,:));
+        M_end = nanmean(M(end-4000:end,:));
+        F(i0:end,:) = F(i0:end,:) - F_end;
+        M(i0:end,:) = M(i0:end,:) - M_end;
 
         % store the data
         save(filename,'F','M','t','dateTrain','Info');

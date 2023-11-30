@@ -2,15 +2,17 @@
 
 % load a specific train
 Set.DatFolder = 'C:\Users\mat950\Documents\Data\TrainProject\Train_20220507';
+% Set.DatFolder = 'C:\Users\mat950\Documents\Data\TrainProject\Train_20230527';
 Set.Filter.Cutoff = 6;
 Set.Filter.Order = 4;
+nTrains = 13;
 
 %% Figure 1
 lw = 1;
 Cs = [0.2 0.2 1];
 
 figure();
-for iTrain = 1:22
+for iTrain = 1:nTrains
 
     % load the datafile
     dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
@@ -19,7 +21,7 @@ for iTrain = 1:22
     % filter train data
     [a,b] = butter(Set.Filter.Order,Set.Filter.Cutoff/(2000*0.5),'low');
     F = filtfilt(a,b,FP.F);
-    M = filtfilt(a,b,FP.M);
+    M = filtfilt(a,b,FP.M);    
 
     % compute COP position
     t = FP.t-FP.t(1);
@@ -55,7 +57,7 @@ lw = 1;
 Cs = [0.2 0.2 1];
 
 figure('Name','Force');
-for iTrain = 1:22
+for iTrain = 1:nTrains
 
     % load the datafile
     dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
@@ -100,7 +102,7 @@ lw = 1;
 Cs = [0.2 0.2 1];
 
 figure('Name','Moment');
-for iTrain = 1:22
+for iTrain = 1:nTrains
 
     % load the datafile
     dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
@@ -144,6 +146,18 @@ for iTrain = 1:22
         titleSel = 'TrainUnknown';
     end
     title(titleSel);
+
+    % %% export train info
+    % % export to csv file
+    % DatCSV = [t F COP];
+    % HeaderCSV  = ['t', 'Fx', 'Fy', 'Fz', 'COPx', 'COPy','COPz'];
+    % 
+    % T = array2table(DatCSV,'VariableNames',HeaderCSV);
+    % OutPathCSV = fullfile(OutPathData,['subject_' num2str(SubjStruct{s}.subject.id)],...
+    %     'SteadyState');
+
+
+
 end
 %% plot overview figure for each train
 
@@ -153,7 +167,7 @@ CFast = [1 0 0];
 TrainType = {'ICD','ICNG','Other'};
 figure('Name','Force Type');
 
-for iTrain = 1:22
+for iTrain = 1:nTrains
 
     % load the datafile
     dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
@@ -222,7 +236,7 @@ CFast = [1 0 0];
 TrainType = {'ICD','ICNG','Other'};
 figure('Name','Force Type');
 
-for iTrain = 1:22
+for iTrain = 1:nTrains
 
     % load the datafile
     dfile = ['Train' num2str(iTrain) '.mat']; % Train20 06-Jul-2022 03:07:44
