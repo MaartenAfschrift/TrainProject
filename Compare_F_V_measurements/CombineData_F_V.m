@@ -1,7 +1,12 @@
-function [t_new,dselF,dselV,headers] = CombineData_F_V(filepathV1,filepathF)
+function [t_new,dselF,dselV,headers,V_selected,headers_sel] = ...
+    CombineData_F_V(filepathV1,filepathF, varargin)
 %CombineData_F_V Combines the measured forces and velocties of a trial
 %   Detailed explanation goes here
 
+all_distances = false;
+if ~isempty(varargin)
+    all_distances = varargin{1};
+end
 
 
 % read the tdms file
@@ -13,12 +18,20 @@ sfV = 2000;
 % create matrix with only velocity info
 datV = [];
 headers = {};
+datV_sel = [];
+headers_sel = {};
 for i =1:length(TabV.Properties.VariableNames)
     name = TabV.Properties.VariableNames{i};
-    %if strcmp(name(end-1:end),'_v') && ~isempty(regexp(name,'_250'))
-    if strcmp(name(end-1:end),'_v');
+    % velocity at 2.5m from the platform. I don't understand this. I
+    % thought that this was closer... Or is this measured from the 
+    % midpoint of the track ? (this would make more sense).
+    if strcmp(name(end-1:end),'_v') && ~isempty(regexp(name,'_250'))
         datV = [datV, TabV.(name)];
         headers = [headers name];
+    end
+    if all_distances && strcmp(name(end-1:end),'_v')
+        datV_sel = [datV_sel, TabV.(name)];
+        headers_sel = [headers_sel name];        
     end
 end
 nfr = length(datV);
@@ -32,11 +45,15 @@ data_F = readtable(filepathF);
 datV_filt = filtfilt(a,b,datV);
 [a,b] = butter(2,4./(2000*0.5),'low');
 data_F.Fy_filt = filtfilt(a,b,data_F.Fy);
+[a,b] = butter(2,4./(2000*0.5),'low');
+datV_sel_filt = filtfilt(a,b,datV_sel);
 
 % subtract start wind velocity
 nfr = length(datV_filt);
 datV_filt = datV_filt - nanmean(datV_filt(1:round(nfr/20),:));
-
+if ~isempty(datV_sel)
+    datV_sel_filt = datV_sel_filt - nanmean(datV_sel_filt(1:round(nfr/20),:));
+end
 
 % autocorrelate
 Vtemp = nanmean(datV_filt,2);
@@ -54,6 +71,11 @@ iDel = diff(data_F.t) == 0;
 data_F(iDel,:) = [];
 dselF = interp1(data_F.t,data_F.Fy_filt,t_new);
 dselV = interp1(tV,datV_filt,t_new);
+
+% downsample selected signals
+if ~isempty(datV_sel)
+    V_selected = interp1(tV, datV_sel_filt,t_new);
+end
 
 
 
